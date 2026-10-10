@@ -18,11 +18,19 @@ def fetch_student_jobs():
 
     print("Titles found: ", len(titles))
 
-    seen = set()
+
     results = []
 
     for title in titles:
         job = title.parent
+
+        share = job.select_one("[data-share]")
+
+        if share is None:
+            print("No link to share")
+            continue
+
+        link = urljoin(url, share["data-share"])
 
         headings = job.select("h5.mb-0")
         names = []
@@ -30,34 +38,17 @@ def fetch_student_jobs():
         for heading in headings:
             names.append(heading.get_text(strip=True))
 
-        name = "-".join(names)  # PROGRAMIRANJE — BACK-END PROGRAMER
-
-        # print(name)
+        name = " - ".join(names)  # PROGRAMIRANJE — BACK-END PROGRAMER
 
         details = job.select("p.mb-0.text-break")
         payment = job.select_one(".job-payment")
-        share = job.select_one("[data-share]")
-
-        if share is None:
-            print("No link to share")
-            continue
-        else:
-            link = urljoin(url, share["data-share"])
-            if link in seen:
-                continue
-            else:
-                seen.add(link)
 
         company = details[0].get_text(strip=True) if details else ""
-        company = company or "Podjetje ni navedeno"
-        location = details[1].get_text(strip=True) if len(details) > 1 else "Ni podatka"
-        pay = payment.get_text(" ", strip=True) if payment else "Ni podatka"
-
-        print(f"\nDelo: {name}")
-        print(f"Podjetje: {company}")
-        print(f"Kraj: {location}")
-        print(f"Plačilo: {pay}")
-        print(f"Povezava: {link}")
+        company = company or "Company not listed"
+        location = (
+            details[1].get_text(strip=True) if len(details) > 1 else "Not available"
+        )
+        pay = payment.get_text(" ", strip=True) if payment else "Not available"
 
         advert = {
             "title": name,

@@ -25,7 +25,6 @@ async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ads = await asyncio.to_thread(fetch_student_jobs)
     number_of_ads = len(ads)
     await update.message.reply_text(f"Found {number_of_ads} jobs")
-    
     #send all found jobs
     for advert in ads:
         message = (
