@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-url = "https://www.studentski-servis.com/studenti/prosta-dela?kljb=&page=1&isci=1&sort=&dm1s=1&regija%5B%5D=osrednjeslovenska&regija%5B%5D=ljubljana-z-okolico&regija%5B%5D=domzale-kamnik&regija%5B%5D=grosuplje-z-okolico&regija%5B%5D=vrhnika-z-okolico&skD%5B%5D=004&skD%5B%5D=A832&skD%5B%5D=A210&skD%5B%5D=A055&skD%5B%5D=A078&skD%5B%5D=A090&skD%5B%5D=A095&hourlyratefrom=7.73&hourlyrateto=31&hourly_rate=7.73%3B31"
+url = "https://www.studentski-servis.com/studenti/prosta-dela?isci=1&dm1s=1&skD[]=004&skD[]=A832&skD[]=A210&skD[]=A055&skD[]=A078&skD[]=A090&skD[]=A095&hourlyratefrom=7.73&hourlyrateto=31&hourly_rate=7.73%3B31"
 
 
 def fetch_student_jobs():
@@ -17,7 +17,6 @@ def fetch_student_jobs():
     titles = soup.select("h5.mb-0")  # to find titles
 
     print("Titles found: ", len(titles))
-
 
     results = []
 
