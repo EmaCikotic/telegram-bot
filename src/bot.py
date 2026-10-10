@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from scraper import fetch_student_jobs
 import asyncio
+import requests
 
 load_dotenv()
 
@@ -22,10 +23,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Looking for jobs...")
-    ads = await asyncio.to_thread(fetch_student_jobs)
+
+    #eror handling
+    try:
+        ads = await asyncio.to_thread(fetch_student_jobs)
+    except requests.RequestException:
+        await update.message.reply_text(
+            "Could not fetch the jobs, please try again later"
+        )
+        return
+
     number_of_ads = len(ads)
     await update.message.reply_text(f"Found {number_of_ads} jobs")
-    #send all found jobs
+    # send all found jobs
     for advert in ads:
         message = (
             f"Title: {advert['title']}\n"
