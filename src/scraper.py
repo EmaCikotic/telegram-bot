@@ -19,6 +19,7 @@ def fetch_student_jobs():
     print("Titles found: ", len(titles))
 
     results = []
+    seen=set()
 
     for title in titles:
         job = title.parent
@@ -31,6 +32,11 @@ def fetch_student_jobs():
 
         link = urljoin(url, share["data-share"])
 
+        if link in seen:
+            continue
+
+        seen.add(link)
+        
         headings = job.select("h5.mb-0")
         names = []
 
