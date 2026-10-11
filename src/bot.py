@@ -160,8 +160,13 @@ def load_state():
         return {}
     else:
         state_text = STATE_FILE.read_text(encoding="utf-8")
-        state = json.loads(state_text)  # turn into dictionary
-        return state
+        
+        try:
+            state = json.loads(state_text)  # turn into dictionary
+        except json.JSONDecodeError:
+            raise RuntimeError("Subscription file contains invalid JSON. Fix it before continuing")
+             
+    return state
 
 
 async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
