@@ -65,13 +65,20 @@ async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
-    #preserve history
+    # preserve history
     state = load_state()
 
     if state.get("chat_id") == chat_id:
-        await update.message.reply_text("You already subscribed to daily alerts")
+        if state.get("enabled", True):
+            await update.message.reply_text("You're already subscribed.")
+            return
+
+        state["enabled"] = True
+        state_text = json.dumps(state, indent=2)
+        STATE_FILE.write_text(state_text, encoding="utf-8")
+        await update.message.reply_text("Daily alerts are enabled.")
         return
-    
+
     # eror handling
     try:
         ads = await asyncio.to_thread(fetch_student_jobs)
@@ -87,11 +94,27 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for advert in ads:
         seen_links.append(advert["link"])
 
-    state = {"chat_id": chat_id, "seen_links": seen_links}
+    state = {"chat_id": chat_id, "seen_links": seen_links, "enabled": True}
     state_text = json.dumps(state, indent=2)
     STATE_FILE.write_text(state_text, encoding="utf-8")
 
     await update.message.reply_text(f"Chat ID: {chat_id}")
+
+
+# /unsubscribe
+async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    state = load_state()
+
+    if state.get("chat_id") != chat_id:
+        await update.message.reply_text("You are not subscribed")
+        return
+
+    state["enabled"] = False
+    state_text = json.dumps(state, indent=2)  # convert to text
+    STATE_FILE.write_text(state_text, encoding="utf-8")
+    await update.message.reply_text("Daily alerts are disabled")
+
 
 
 def load_state():
@@ -107,6 +130,9 @@ async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
     state = load_state()
 
     if not state:
+        return
+
+    if not state.get("enabled", True):
         return
 
     chat_id = state["chat_id"]
@@ -148,6 +174,7 @@ app = Application.builder().token(token).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("jobs", jobs))
 app.add_handler(CommandHandler("subscribe", subscribe))
+app.add_handler(CommandHandler("unsubscribe", unsubscribe))
 
 # send daily
 app.job_queue.run_daily(
