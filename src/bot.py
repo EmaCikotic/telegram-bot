@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from datetime import time
 from zoneinfo import ZoneInfo
+from telegram.error import TelegramError
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent  # finds the folder
 STATE_FILE = (
@@ -142,7 +143,7 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update):
         await update.message.reply_text("This is a personal bot")
         return
-    
+
     chat_id = update.effective_chat.id
     state = load_state()
 
@@ -160,12 +161,14 @@ def load_state():
         return {}
     else:
         state_text = STATE_FILE.read_text(encoding="utf-8")
-        
+
         try:
             state = json.loads(state_text)  # turn into dictionary
         except json.JSONDecodeError:
-            raise RuntimeError("Subscription file contains invalid JSON. Fix it before continuing")
-             
+            raise RuntimeError(
+                "Subscription file contains invalid JSON. Fix it before continuing"
+            )
+
     return state
 
 
@@ -196,7 +199,12 @@ async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
 
         print("Sending new job:", link)
         message = format_job(advert)
-        await context.bot.send_message(chat_id=chat_id, text=message)
+
+        try:
+            await context.bot.send_message(chat_id=chat_id, text=message)
+        except TelegramError as error:
+            print(f"the failed link: {link}, error: {error}")
+            continue
 
         seen_links.add(link)
 
