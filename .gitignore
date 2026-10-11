@@ -1,4 +1,5 @@
 .env
 data/subscriptions.json
+data/job-history.json
 .venv/
 src/__pycache__/
