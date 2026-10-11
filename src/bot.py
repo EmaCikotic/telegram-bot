@@ -21,12 +21,20 @@ STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 load_dotenv()
 
 token = os.getenv("TELEGRAM_BOT_TOKEN")
+owner_user_id = os.getenv("OWNER_USER_ID")
 
 
 if token:
     print("sucessfully read")
 else:
     raise SystemExit("Missing TELEGRAM_BOT_TOKEN. Add it to your .env file.")
+
+if owner_user_id:
+    print("sucessfully read")
+else:
+    raise SystemExit("Missing OWNER_USER_ID. Add it to your .env file.")
+
+owner_user_id = int(owner_user_id)
 
 
 # helper functions
@@ -46,13 +54,26 @@ def save_state(state):
     STATE_FILE.write_text(state_text, encoding="utf-8")
 
 
+def is_owner(update):
+    return update.effective_user.id == owner_user_id
+
+
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+
     await update.message.reply_text("The bot is working")
 
 
 # /jobs
 async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+
     await update.message.reply_text("Looking for jobs...")
 
     # eror handling
@@ -74,6 +95,11 @@ async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # /subscribe - for scheduling
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+
     chat_id = update.effective_chat.id
 
     # preserve history
@@ -112,6 +138,11 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # /unsubscribe
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+    
     chat_id = update.effective_chat.id
     state = load_state()
 
