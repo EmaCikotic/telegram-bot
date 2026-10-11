@@ -172,7 +172,7 @@ def load_state():
     return state
 
 
-async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
+async def send_new_jobs(bot):
     state = load_state()
 
     if not state:
@@ -201,7 +201,7 @@ async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
         message = format_job(advert)
 
         try:
-            await context.bot.send_message(chat_id=chat_id, text=message)
+            await bot.send_message(chat_id=chat_id, text=message)
         except TelegramError as error:
             print(f"the failed link: {link}, error: {error}")
             continue
@@ -212,23 +212,30 @@ async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
         state["seen_links"] = list(seen_links)
         save_state(state)
 
+async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
+    await send_new_jobs(context.bot)
 
-app = Application.builder().token(token).build()
+def main():
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("jobs", jobs))
-app.add_handler(CommandHandler("subscribe", subscribe))
-app.add_handler(CommandHandler("unsubscribe", unsubscribe))
+    app = Application.builder().token(token).build()
 
-# send daily
-app.job_queue.run_daily(
-    callback=send_daily_jobs,
-    time=time(hour=12, minute=0, tzinfo=ZoneInfo("Europe/Ljubljana")),
-)
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("jobs", jobs))
+    app.add_handler(CommandHandler("subscribe", subscribe))
+    app.add_handler(CommandHandler("unsubscribe", unsubscribe))
+
+    # send daily
+    app.job_queue.run_daily(
+        callback=send_daily_jobs,
+        time=time(hour=12, minute=0, tzinfo=ZoneInfo("Europe/Ljubljana")),
+    )
 
 
-# test
-# app.job_queue.run_once(send_daily_jobs, when=10)
+    # test
+    # app.job_queue.run_once(send_daily_jobs, when=10)
 
-print("Bot is listening send  /start in Telegram.")
-app.run_polling()
+    print("Bot is listening send  /start in Telegram.")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
