@@ -29,6 +29,23 @@ else:
     print("there is no token")
 
 
+# helper functions
+def format_job(advert):
+    message = (
+        f"Title: {advert['title']}\n"
+        f"Company: {advert['company']}\n"
+        f"Location: {advert['location']}\n"
+        f"Pay: {advert['pay']}\n"
+        f"Link: {advert['link']}"
+    )
+    return message
+
+
+def save_state(state):
+    state_text = json.dumps(state, indent=2)
+    STATE_FILE.write_text(state_text, encoding="utf-8")
+
+
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("The bot is working")
@@ -51,13 +68,7 @@ async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Found {number_of_ads} jobs")
     # send all found jobs
     for advert in ads:
-        message = (
-            f"Title: {advert['title']}\n"
-            f"Company: {advert['company']}\n"
-            f"Location: {advert['location']}\n"
-            f"Pay: {advert['pay']}\n"
-            f"Link: {advert['link']}"
-        )
+        message = format_job(advert)
         await update.message.reply_text(message)
 
 
@@ -74,8 +85,7 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         state["enabled"] = True
-        state_text = json.dumps(state, indent=2)
-        STATE_FILE.write_text(state_text, encoding="utf-8")
+        save_state(state)
         await update.message.reply_text("Daily alerts are enabled.")
         return
 
@@ -95,8 +105,7 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         seen_links.append(advert["link"])
 
     state = {"chat_id": chat_id, "seen_links": seen_links, "enabled": True}
-    state_text = json.dumps(state, indent=2)
-    STATE_FILE.write_text(state_text, encoding="utf-8")
+    save_state(state)
 
     await update.message.reply_text(f"Chat ID: {chat_id}")
 
@@ -111,10 +120,8 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     state["enabled"] = False
-    state_text = json.dumps(state, indent=2)  # convert to text
-    STATE_FILE.write_text(state_text, encoding="utf-8")
+    save_state(state)
     await update.message.reply_text("Daily alerts are disabled")
-
 
 
 def load_state():
@@ -152,21 +159,14 @@ async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
             continue
 
         print("Sending new job:", link)
-        message = (
-            f"Title: {advert['title']}\n"
-            f"Company: {advert['company']}\n"
-            f"Location: {advert['location']}\n"
-            f"Pay: {advert['pay']}\n"
-            f"Link: {advert['link']}"
-        )
+        message = format_job(advert)
         await context.bot.send_message(chat_id=chat_id, text=message)
 
         seen_links.add(link)
 
         # save the updated history
         state["seen_links"] = list(seen_links)
-        state_text = json.dumps(state, indent=2)
-        STATE_FILE.write_text(state_text, encoding="utf-8")
+        save_state(state)
 
 
 app = Application.builder().token(token).build()
