@@ -29,11 +29,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p data
-          artifact_id=$(gh api \
+                    artifact_id=$(gh api \
             "repos/$GITHUB_REPOSITORY/actions/artifacts?name=job-history&per_page=100" \
             --paginate --slurp \
-            --jq '[.[].artifacts[] | select(.expired == false)] | sort_by(.created_at) | last | .id // empty')
-
+            | jq -r '[.[].artifacts[] | select(.expired == false)] | sort_by(.created_at) | last | .id // empty')
           if [ -n "$artifact_id" ]; then
             gh api \
               "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
