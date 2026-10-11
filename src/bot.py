@@ -65,6 +65,13 @@ async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
+    #preserve history
+    state = load_state()
+
+    if state.get("chat_id") == chat_id:
+        await update.message.reply_text("You already subscribed to daily alerts")
+        return
+    
     # eror handling
     try:
         ads = await asyncio.to_thread(fetch_student_jobs)
@@ -150,7 +157,7 @@ app.job_queue.run_daily(
 
 
 # test
-#app.job_queue.run_once(send_daily_jobs, when=10)
+# app.job_queue.run_once(send_daily_jobs, when=10)
 
 print("Bot is listening send  /start in Telegram.")
 app.run_polling()
