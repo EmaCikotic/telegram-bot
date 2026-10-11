@@ -26,7 +26,7 @@ token = os.getenv("TELEGRAM_BOT_TOKEN")
 if token:
     print("sucessfully read")
 else:
-    print("there is no token")
+    raise SystemExit("Missing TELEGRAM_BOT_TOKEN. Add it to your .env file.")
 
 
 # helper functions
