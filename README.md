@@ -6,8 +6,8 @@ A personal Python bot that finds student IT jobs on e-Študentski Servis and sen
 
 - `/start` — check that the bot works
 - `/jobs` — fetch matching jobs across result pages
-- `/subscribe` — enable daily alerts
-- `/unsubscribe` — pause alerts without losing history
+- `/subscribe` — enable local daily alerts
+- `/unsubscribe` — pause local alerts without losing history
 - Send only unseen listings in daily alerts
 - Restrict commands to the owner
 
@@ -47,7 +47,9 @@ The first daily-script run saves current listings without sending them. Later ru
 
 ## GitHub Actions
 
-The workflow runs the daily script without requiring your computer to be on.
+Daily alerts run automatically through GitHub Actions, scheduled for **12:00 Ljubljana time**. Your computer can be off. GitHub may delay scheduled runs, so messages might arrive after noon.
+
+Interactive commands such as `/jobs` require `bot.py` to be running locally.
 
 Add these repository secrets:
 
@@ -55,13 +57,15 @@ Add these repository secrets:
 - `OWNER_USER_ID`
 - `TELEGRAM_CHAT_ID`
 
-Start it from **Actions → Daily job alerts → Run workflow**.
+To run a check manually, open **Actions → Daily job alerts → Run workflow**.
 
-Job history is saved between runs as an artifact containing only job links.
+Job history is saved between runs as an artifact containing only job links. Messages are sent only when new listings are found.
 
-Automatic scheduling is not configured yet. Interactive Telegram commands require the local bot to be running.
+To pause deployed alerts, disable the workflow on GitHub. Local `/unsubscribe` does not pause GitHub alerts.
+
+
 
 ## Planned
 
-- Automatic daily checks at 12:00 Ljubljana time
 - More job sources
+- Move scheduling and hosting to another service
