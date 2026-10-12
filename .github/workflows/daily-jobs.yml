@@ -1,6 +1,10 @@
 name: Daily job alerts
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 12 * * *"
+      timezone: "Europe/Ljubljana"
 
 permissions:
   contents: read
@@ -29,7 +33,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p data
-                    artifact_id=$(gh api \
+          artifact_id=$(gh api \
             "repos/$GITHUB_REPOSITORY/actions/artifacts?name=job-history&per_page=100" \
             --paginate --slurp \
             | jq -r '[.[].artifacts[] | select(.expired == false)] | sort_by(.created_at) | last | .id // empty')
