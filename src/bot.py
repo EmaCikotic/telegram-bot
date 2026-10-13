@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from scraper import fetch_student_jobs
+from scraper import fetch_student_jobs, default_filters
 import asyncio
 import requests
 import json
@@ -156,6 +156,25 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Daily alerts are disabled")
 
 
+# /settings
+async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+
+    regions = default_filters["regions"]
+    location_text = ", ".join(regions) if regions else "All locations"
+    category_text = ", ".join(default_filters["categories"])
+
+    message = (
+        f"Locations: {location_text}\n"
+        f"Category codes: {category_text} \n"
+        f"Minimum pay: €{default_filters['min_pay']}/hour\n"
+        f"Maximum pay: €{default_filters['max_pay']}/hour\n"
+    )
+    await update.message.reply_text(message)
+
+
 def load_state():
     if not STATE_FILE.exists():
         return {}
@@ -234,6 +253,7 @@ def main():
     app.add_handler(CommandHandler("jobs", jobs))
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
+    app.add_handler(CommandHandler("settings", settings))
 
     # send daily
     app.job_queue.run_daily(
