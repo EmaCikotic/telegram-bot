@@ -42,6 +42,51 @@ else:
 owner_user_id = int(owner_user_id)
 
 
+location_options = {
+    "all": [],
+    "ljubljana": ["ljubljana-z-okolico"],
+    "osrednjeslovenska": [
+        "osrednjeslovenska",
+        "ljubljana-z-okolico",
+        "domzale-kamnik",
+        "grosuplje-z-okolico",
+        "vrhnika-z-okolico",
+    ],
+    "podravska": [
+        "podravska",
+        "maribor-z-okolico",
+        "ptuj-z-okolico",
+    ],
+    "koroska": ["koroska"],
+    "pomurska": ["pomurska"],
+    "savinjska": ["savinjska"],
+    "zasavska": ["zasavska"],
+    "gorenjska": [
+        "gorenjska",
+        "kranj-z-okolico",
+        "skofja-loka-z-okolico",
+        "radovljica-z-okolico",
+        "jesenice-z-okolico",
+    ],
+    "goriska": ["goriska"],
+    "primorsko-notranjska": ["primorsko-notranjska"],
+    "obala": [
+        "koper-z-okolico",
+        "izola-z-okolico",
+        "piran-z-okolico",
+    ],
+    "obalno-kraska": [
+        "obalno-kraska",
+        "koper-z-okolico",
+        "izola-z-okolico",
+        "piran-z-okolico",
+        "kras",
+    ],
+    "posavska": ["posavska"],
+    "dolenjska": ["dolenjska"],
+}
+
+
 # helper functions
 def format_job(advert):
     message = (
@@ -221,7 +266,7 @@ async def minpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Minimum pay set to €{min_pay:g}/hour (net).")
 
 
-# /maxpay
+# /maxpay update
 async def maxpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update):
         await update.message.reply_text("This is a personal bot")
@@ -241,7 +286,7 @@ async def maxpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if max_pay < 0 or max_pay < filters["min_pay"] or not math.isfinite(max_pay):
         await update.message.reply_text(
-            f"The maximum must be finite and at least the current minimum: {filters["min_pay"]}"
+            f"The maximum must be finite and at least the current minimum: {filters['min_pay']}"
         )
         return
 
@@ -252,10 +297,41 @@ async def maxpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Maximal pay set to €{max_pay:g}/hour (net).")
 
 
+# /location update
+async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot.")
+        return
+
+    choices = ", ".join(location_options)
+
+    if len(context.args) != 1:
+        await update.message.reply_text(
+            f"Usage: /location <area>\nAvailable: {choices}"
+        )
+        return
+
+    choice = context.args[0].lower()
+
+    if choice not in location_options:
+        await update.message.reply_text(f"Unknown location.\nAvailable: {choices}")
+        return
+
+    filters = load_filters()
+    filters["regions"] = location_options[choice].copy()
+    save_filters(filters)
+
+    await update.message.reply_text(f"Location set to: {choice}. Use /jobs to search.")
+
+
 # /resetfilters
 async def resetfilters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update):
         await update.message.reply_text("This is a personal bot")
+        return
+
+    if len(context.args) != 1:
+        await update.message.reply_text("Usage: /resetfilters")
         return
 
     # get the default filters
@@ -367,6 +443,7 @@ def main():
     app.add_handler(CommandHandler("minpay", minpay))
     app.add_handler(CommandHandler("maxpay", maxpay))
     app.add_handler(CommandHandler("resetfilters", resetfilters))
+    app.add_handler(CommandHandler("location", location))
 
     # send daily
     app.job_queue.run_daily(
