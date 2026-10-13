@@ -10,11 +10,14 @@ from pathlib import Path
 from datetime import time
 from zoneinfo import ZoneInfo
 from telegram.error import TelegramError
+import copy
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent  # finds the folder
 STATE_FILE = (
     PROJECT_ROOT / "data" / "subscriptions.json"
 )  # points to the json file inside data
+
+FILTERS_FILE = PROJECT_ROOT / "data" / "filters.json"
 
 STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
@@ -53,6 +56,12 @@ def format_job(advert):
 def save_state(state):
     state_text = json.dumps(state, indent=2)
     STATE_FILE.write_text(state_text, encoding="utf-8")
+
+
+def save_filters(filters):
+    filter_json = json.dumps(filters, indent=2)
+
+    FILTERS_FILE.write_text(filter_json, encoding="utf-8")
 
 
 def is_owner(update):
@@ -162,15 +171,17 @@ async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("This is a personal bot")
         return
 
-    regions = default_filters["regions"]
+    filters = load_filters()
+
+    regions = filters["regions"]
     location_text = ", ".join(regions) if regions else "All locations"
-    category_text = ", ".join(default_filters["categories"])
+    category_text = ", ".join(filters["categories"])
 
     message = (
         f"Locations: {location_text}\n"
-        f"Category codes: {category_text} \n"
-        f"Minimum pay: €{default_filters['min_pay']}/hour\n"
-        f"Maximum pay: €{default_filters['max_pay']}/hour\n"
+        f"Category codes: {category_text}\n"
+        f"Minimum pay: €{filters['min_pay']}/hour\n"
+        f"Maximum pay: €{filters['max_pay']}/hour\n"
     )
     await update.message.reply_text(message)
 
@@ -189,6 +200,22 @@ def load_state():
             )
 
     return state
+
+
+def load_filters():
+    if not FILTERS_FILE.exists():
+        return copy.deepcopy(default_filters)
+    else:
+        filters_text = FILTERS_FILE.read_text(encoding="utf-8")
+
+        try:
+            filters = json.loads(filters_text)  # turn into dictionary
+        except json.JSONDecodeError:
+            raise RuntimeError(
+                "Filters file contains invalid JSON. Fix it before continuing"
+            )
+
+    return filters
 
 
 async def send_new_jobs(bot):
