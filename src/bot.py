@@ -191,11 +191,15 @@ async def send_new_jobs(bot):
 
         return
 
+    new_jobs_count = 0
+
     for advert in ads:
         link = advert["link"]
 
         if link in seen_links:
             continue
+
+        new_jobs_count += 1
 
         print("Sending new job:", link)
         message = format_job(advert)
@@ -212,8 +216,15 @@ async def send_new_jobs(bot):
         state["seen_links"] = list(seen_links)
         save_state(state)
 
+    if new_jobs_count == 0:
+        await bot.send_message(
+            chat_id=chat_id, text="Daily check complete: no new jobs found."
+        )
+
+
 async def send_daily_jobs(context: ContextTypes.DEFAULT_TYPE):
     await send_new_jobs(context.bot)
+
 
 def main():
 
@@ -230,12 +241,12 @@ def main():
         time=time(hour=12, minute=0, tzinfo=ZoneInfo("Europe/Ljubljana")),
     )
 
-
     # test
     # app.job_queue.run_once(send_daily_jobs, when=10)
 
     print("Bot is listening send  /start in Telegram.")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()

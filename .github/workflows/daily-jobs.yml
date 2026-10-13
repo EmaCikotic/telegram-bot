@@ -3,7 +3,7 @@ name: Daily job alerts
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "*/5 * * * *"
       timezone: "Europe/Ljubljana"
 
 permissions:
