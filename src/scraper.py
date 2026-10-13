@@ -2,14 +2,53 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, parse_qs, urlencode, urlsplit, urlunsplit
 
-url = "https://www.studentski-servis.com/studenti/prosta-dela?isci=1&dm1s=1&skD[]=004&skD[]=A832&skD[]=A210&skD[]=A055&skD[]=A078&skD[]=A090&skD[]=A095&hourlyratefrom=7.73&hourlyrateto=31&hourly_rate=7.73%3B31"
+
+base_url = "https://www.studentski-servis.com/studenti/prosta-dela"
+# url = "https://www.studentski-servis.com/studenti/prosta-dela?isci=1&dm1s=1&skD[]=004&skD[]=A832&skD[]=A210&skD[]=A055&skD[]=A078&skD[]=A090&skD[]=A095&hourlyratefrom=7.73&hourlyrateto=31&hourly_rate=7.73%3B31"
 
 # test_url_for_pagination = "https://www.studentski-servis.com/studenti/prosta-dela?isci=1&dm1s=1&hourlyratefrom=7.73&hourlyrateto=31&hourly_rate=7.73%3B31&regija[]=osrednjeslovenska"
 
+default_filters = {
+    "categories": ["004", "A832", "A210", "A055", "A078", "A090", "A095"],
+    "regions": [],
+    "min_pay": 7.73,
+    "max_pay": 31,
+}
 
-def fetch_student_jobs():
 
-    url_parts = urlsplit(url)
+test_filters = {
+    "categories": ["004", "A832", "A210", "A055", "A078", "A090", "A095"],
+    "regions": ["osrednjeslovenska"],
+    "min_pay": 7.73,
+    "max_pay": 31,
+}
+
+
+
+
+def build_search_url(filters):
+
+    query = {
+        "isci": 1,
+        "dm1s": 1,
+        "skD[]": filters["categories"],
+        "regija[]": filters["regions"],
+        "hourlyratefrom": filters["min_pay"],
+        "hourlyrateto": filters["max_pay"],
+        "hourly_rate": f"{filters['min_pay']};{filters['max_pay']}",
+    }
+
+    query_string = urlencode(query, doseq=True)
+
+    return base_url + "?" + query_string
+
+
+url = build_search_url(default_filters)
+
+
+def fetch_student_jobs(search_url=url):
+
+    url_parts = urlsplit(search_url)
     params = parse_qs(url_parts.query, keep_blank_values=True)
     print(params)
 
@@ -54,7 +93,7 @@ def fetch_student_jobs():
                 print("No link to share")
                 continue
 
-            link = urljoin(url, share["data-share"])
+            link = urljoin(search_url, share["data-share"])
 
             if link in seen:
                 continue
