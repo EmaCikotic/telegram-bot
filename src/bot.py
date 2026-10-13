@@ -221,13 +221,44 @@ async def minpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Minimum pay set to €{min_pay:g}/hour (net).")
 
 
+# /maxpay
+async def maxpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+
+    if len(context.args) != 1:
+        await update.message.reply_text("Usage: /maxpay 20")
+        return
+
+    try:
+        max_pay = float(context.args[0])
+    except ValueError:
+        await update.message.reply_text("Enter a number, for example: /maxpay 100")
+        return
+
+    filters = load_filters()
+
+    if max_pay < 0 or max_pay < filters["min_pay"] or not math.isfinite(max_pay):
+        await update.message.reply_text(
+            f"The maximum must be finite and at least the current minimum: {filters["min_pay"]}"
+        )
+        return
+
+    # update the min pay
+    filters["max_pay"] = max_pay
+    save_filters(filters)  # updated dictionary
+
+    await update.message.reply_text(f"Maximal pay set to €{max_pay:g}/hour (net).")
+
+
 # /resetfilters
 async def resetfilters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_owner(update):
         await update.message.reply_text("This is a personal bot")
         return
 
-    #get the default filters
+    # get the default filters
     filters = copy.deepcopy(default_filters)
 
     save_filters(filters)
@@ -327,13 +358,14 @@ def main():
 
     app = Application.builder().token(token).build()
 
-    #commands
+    # commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("jobs", jobs))
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
     app.add_handler(CommandHandler("settings", settings))
     app.add_handler(CommandHandler("minpay", minpay))
+    app.add_handler(CommandHandler("maxpay", maxpay))
     app.add_handler(CommandHandler("resetfilters", resetfilters))
 
     # send daily
