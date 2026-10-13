@@ -221,6 +221,22 @@ async def minpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Minimum pay set to €{min_pay:g}/hour (net).")
 
 
+# /resetfilters
+async def resetfilters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+
+    #get the default filters
+    filters = copy.deepcopy(default_filters)
+
+    save_filters(filters)
+
+    await update.message.reply_text(
+        "Filters reset to default. Use /settings to view them "
+    )
+
+
 def load_state():
     if not STATE_FILE.exists():
         return {}
@@ -311,12 +327,14 @@ def main():
 
     app = Application.builder().token(token).build()
 
+    #commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("jobs", jobs))
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
     app.add_handler(CommandHandler("settings", settings))
     app.add_handler(CommandHandler("minpay", minpay))
+    app.add_handler(CommandHandler("resetfilters", resetfilters))
 
     # send daily
     app.job_queue.run_daily(
