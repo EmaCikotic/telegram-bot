@@ -2,10 +2,6 @@ name: Daily job alerts
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/5 * * * *"
-      timezone: "Europe/Ljubljana"
-
 permissions:
   contents: read
   actions: read

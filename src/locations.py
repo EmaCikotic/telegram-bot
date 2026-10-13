@@ -1,0 +1,43 @@
+location_options = {
+    "all": [],
+    "ljubljana": ["ljubljana-z-okolico"],
+    "osrednjeslovenska": [
+        "osrednjeslovenska",
+        "ljubljana-z-okolico",
+        "domzale-kamnik",
+        "grosuplje-z-okolico",
+        "vrhnika-z-okolico",
+    ],
+    "podravska": [
+        "podravska",
+        "maribor-z-okolico",
+        "ptuj-z-okolico",
+    ],
+    "koroska": ["koroska"],
+    "pomurska": ["pomurska"],
+    "savinjska": ["savinjska"],
+    "zasavska": ["zasavska"],
+    "gorenjska": [
+        "gorenjska",
+        "kranj-z-okolico",
+        "skofja-loka-z-okolico",
+        "radovljica-z-okolico",
+        "jesenice-z-okolico",
+    ],
+    "goriska": ["goriska"],
+    "primorsko-notranjska": ["primorsko-notranjska"],
+    "obala": [
+        "koper-z-okolico",
+        "izola-z-okolico",
+        "piran-z-okolico",
+    ],
+    "obalno-kraska": [
+        "obalno-kraska",
+        "koper-z-okolico",
+        "izola-z-okolico",
+        "piran-z-okolico",
+        "kras",
+    ],
+    "posavska": ["posavska"],
+    "dolenjska": ["dolenjska"],
+}
