@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (
     Application,
-    CallbackContext,
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
@@ -16,17 +15,20 @@ import json
 from pathlib import Path
 from datetime import time
 from zoneinfo import ZoneInfo
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import TelegramError
 import copy
 from categories import category_groups
+from access import is_owner
+from filter_storage import load_filters, save_filters
+from category_handlers import categories, category_callback, select_category
+
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent  # finds the folder
 STATE_FILE = (
     PROJECT_ROOT / "data" / "subscriptions.json"
 )  # points to the json file inside data
 
-FILTERS_FILE = PROJECT_ROOT / "data" / "filters.json"
 
 STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
@@ -34,20 +36,11 @@ STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 load_dotenv()
 
 token = os.getenv("TELEGRAM_BOT_TOKEN")
-owner_user_id = os.getenv("OWNER_USER_ID")
-
 
 if token:
     print("sucessfully read")
 else:
     raise SystemExit("Missing TELEGRAM_BOT_TOKEN. Add it to your .env file.")
-
-if owner_user_id:
-    print("sucessfully read")
-else:
-    raise SystemExit("Missing OWNER_USER_ID. Add it to your .env file.")
-
-owner_user_id = int(owner_user_id)
 
 
 location_options = {
@@ -110,16 +103,6 @@ def format_job(advert):
 def save_state(state):
     state_text = json.dumps(state, indent=2)
     STATE_FILE.write_text(state_text, encoding="utf-8")
-
-
-def save_filters(filters):
-    filter_json = json.dumps(filters, indent=2)
-
-    FILTERS_FILE.write_text(filter_json, encoding="utf-8")
-
-
-def is_owner(update):
-    return update.effective_user.id == owner_user_id
 
 
 # /start
@@ -332,139 +315,6 @@ async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Location set to: {choice}. Use /jobs to search.")
 
 
-# /categories update
-async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_owner(update):
-        await update.message.reply_text("This is a personal bot.")
-        return
-
-    keyboard = []
-
-    for code, group in category_groups.items():
-        button = InlineKeyboardButton(
-            text=group["name"],
-            callback_data=f"category:{code}",
-        )
-        keyboard.append([button])
-
-    markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(
-        "Izberi kategorijo dela:",
-        reply_markup=markup,
-    )
-
-
-async def category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-
-    if not is_owner(update):
-        await query.answer("This is a personal bot.", show_alert=True)
-        return
-
-    await query.answer()
-
-    if query.data == "category_back":
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    text=group["name"],
-                    callback_data=f"category:{code}",
-                )
-            ]
-            for code, group in category_groups.items()
-        ]
-
-        await query.edit_message_text(
-            "Izberi kategorijo dela:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-        return
-
-    code = query.data.split(":", 1)[1]
-    group = category_groups.get(code)
-
-    if group is None:
-        await query.edit_message_text(
-            "Kategorija ni več na voljo. Uporabi /categories."
-        )
-        return
-
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                text="Izberi celotno kategorijo",
-                callback_data=f"select_category:{code}",
-            )
-        ]
-    ]
-
-    for child_code, child_name in group["children"].items():
-        keyboard.append(
-            [
-                InlineKeyboardButton(
-                    text=child_name,
-                    callback_data=f"select_category:{code}:{child_code}",
-                )
-            ]
-        )
-
-    keyboard.append([InlineKeyboardButton(text="Nazaj", callback_data="category_back")])
-
-    await query.edit_message_text(
-        f"Izberi podkategorijo: {group['name']}",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
-
-
-async def select_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-
-    if not is_owner(update):
-        await query.answer("This is a personal bot.", show_alert=True)
-        return
-
-    parts = query.data.split(":")
-    group_code = parts[1]
-    group = category_groups.get(group_code)
-
-    if group is None:
-        await query.answer("Neveljavna kategorija.", show_alert=True)
-        return
-
-    if len(parts) == 3:
-        child_code = parts[2]
-
-        if child_code not in group["children"]:
-            await query.answer("Neveljavna podkategorija.", show_alert=True)
-            return
-
-        selected_codes = [child_code]
-        selected_name = group["children"][child_code]
-    else:
-        selected_codes = [group_code, *group["children"]]
-        selected_name = group["name"]
-
-    await query.answer()
-
-    filters = load_filters()
-    filters["categories"] = selected_codes
-    save_filters(filters)
-
-    await query.edit_message_text(
-        f"Shranjena izbira: {selected_name}\nZa iskanje uporabi /jobs.",
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text="Nazaj na kategorije",
-                        callback_data="category_back",
-                    )
-                ]
-            ]
-        ),
-    )
-
 
 # /resetfilters
 async def resetfilters(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -472,7 +322,7 @@ async def resetfilters(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("This is a personal bot")
         return
 
-    if len(context.args) != 1:
+    if len(context.args) != 0:
         await update.message.reply_text("Usage: /resetfilters")
         return
 
@@ -500,22 +350,6 @@ def load_state():
             )
 
     return state
-
-
-def load_filters():
-    if not FILTERS_FILE.exists():
-        return copy.deepcopy(default_filters)
-    else:
-        filters_text = FILTERS_FILE.read_text(encoding="utf-8")
-
-        try:
-            filters = json.loads(filters_text)  # turn into dictionary
-        except json.JSONDecodeError:
-            raise RuntimeError(
-                "Filters file contains invalid JSON. Fix it before continuing"
-            )
-
-    return filters
 
 
 async def send_new_jobs(bot):
@@ -576,7 +410,7 @@ def main():
 
     app = Application.builder().token(token).build()
 
-    # commands
+    # commands for the bot
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("jobs", jobs))
     app.add_handler(CommandHandler("subscribe", subscribe))
@@ -587,7 +421,6 @@ def main():
     app.add_handler(CommandHandler("resetfilters", resetfilters))
     app.add_handler(CommandHandler("location", location))
     app.add_handler(CommandHandler("categories", categories))
-
     app.add_handler(
         CallbackQueryHandler(
             category_callback,
