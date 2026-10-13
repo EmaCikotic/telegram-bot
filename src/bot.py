@@ -1,8 +1,9 @@
+import math
 import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from scraper import fetch_student_jobs, default_filters
+from scraper import fetch_student_jobs, default_filters, build_search_url
 import asyncio
 import requests
 import json
@@ -86,9 +87,12 @@ async def jobs(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("Looking for jobs...")
 
+    filters = load_filters()
+    search_url = build_search_url(filters)
+
     # eror handling
     try:
-        ads = await asyncio.to_thread(fetch_student_jobs)
+        ads = await asyncio.to_thread(fetch_student_jobs, search_url)
     except requests.RequestException:
         await update.message.reply_text(
             "Could not fetch the jobs, please try again later"
@@ -186,6 +190,37 @@ async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message)
 
 
+# /minpay update
+async def minpay(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_owner(update):
+        await update.message.reply_text("This is a personal bot")
+        return
+
+    if len(context.args) != 1:
+        await update.message.reply_text("Usage: /minpay 10")
+        return
+
+    try:
+        min_pay = float(context.args[0])
+    except ValueError:
+        await update.message.reply_text("Enter a number, for example: /minpay 10")
+        return
+
+    filters = load_filters()
+
+    if min_pay < 0 or min_pay > filters["max_pay"] or not math.isfinite(min_pay):
+        await update.message.reply_text(
+            f"The minmum hourly wage has to be a finite number between zero and the current maximum:{filters['max_pay']}"
+        )
+        return
+
+    # update the min pay
+    filters["min_pay"] = min_pay
+    save_filters(filters)  # updated dictionary
+
+    await update.message.reply_text(f"Minimum pay set to €{min_pay:g}/hour (net).")
+
+
 def load_state():
     if not STATE_FILE.exists():
         return {}
@@ -281,6 +316,7 @@ def main():
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
     app.add_handler(CommandHandler("settings", settings))
+    app.add_handler(CommandHandler("minpay", minpay))
 
     # send daily
     app.job_queue.run_daily(
