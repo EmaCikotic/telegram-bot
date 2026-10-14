@@ -92,25 +92,23 @@ python src/daily_jobs.py
 
 The first daily-script run saves current listings without sending them. Later runs send new listings, or a confirmation when no new jobs are found.
 
-## GitHub Actions
+## Daily alerts
 
-The workflow can be run manually through GitHub Actions, and Telegram delivery has been tested.
+cron-job.org starts the GitHub Actions workflow every day at **12:00 Ljubljana time**. Your computer can be off, although messages may arrive later than scheduled.
 
-A daily schedule is configured for 12:00 Ljubljana time, but automatic triggering is currently not working reliably..
+The setup has successfully triggered a workflow and delivered a Telegram message. Automatic daily execution still needs to be confirmed.
 
-Interactive commands require `bot.py` to be running locally.
+Each run checks for new listings and saves job history for future runs. If no new jobs are found, the bot sends a confirmation.
 
-Add these repository secrets:
+Configure these repository secrets on GitHub:
 
 - `TELEGRAM_BOT_TOKEN`
 - `OWNER_USER_ID`
 - `TELEGRAM_CHAT_ID`
 
-To run a check manually, open **Actions → Daily job alerts → Run workflow**.
+For a manual check, select **Actions → Daily job alerts → Run workflow**.
 
-Job history is saved between runs as an artifact containing only job links. History artifacts expire after 90 days.
-
-To pause deployed alerts, disable the workflow on GitHub. Local `/unsubscribe` does not pause GitHub alerts.
+Telegram commands require `bot.py` to be running locally. Saved local filters are not yet shared with GitHub alerts.
 
 ## Planned
 
