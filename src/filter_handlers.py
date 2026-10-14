@@ -8,6 +8,7 @@ from access import is_owner
 from filter_storage import load_filters, save_filters
 from locations import location_options
 from scraper import default_filters
+from categories import category_groups
 
 
 # /settings
@@ -20,7 +21,27 @@ async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     regions = filters["regions"]
     location_text = ", ".join(regions) if regions else "All locations"
-    category_text = ", ".join(filters["categories"])
+   
+    category_names = {}
+
+    for code, group in category_groups.items():
+        category_names[code] = group["name"]
+        category_names.update(group["children"])
+
+    selected = set(filters["categories"])
+    display_names = []
+
+    for code in filters["categories"]:
+        # Hide child names when their whole group is selected.
+        if any(
+            code in group["children"] and parent_code in selected
+            for parent_code, group in category_groups.items()
+        ):
+            continue
+
+        display_names.append(category_names.get(code, code))
+
+    category_text = ", ".join(display_names) if display_names else "All categories"
 
     message = (
         f"Locations: {location_text}\n"
