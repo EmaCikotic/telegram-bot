@@ -94,7 +94,7 @@ The first daily-script run saves current listings without sending them. Later ru
 
 ## Daily alerts
 
-cron-job.org starts the GitHub Actions workflow every day at **12:00 Ljubljana time**. Your computer can be off, although messages may arrive later than scheduled.
+Daily alerts run at **12:00 Ljubljana time**, triggered by cron-job.org through GitHub Actions. Automatic triggering and Telegram delivery have been tested successfully. Your computer does not need to be on.
 
 The setup has successfully triggered a workflow and delivered a Telegram message. Automatic daily execution still needs to be confirmed.
 
